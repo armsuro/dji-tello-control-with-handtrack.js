@@ -1,0 +1,13 @@
+<script src="/socket.io/socket.io.js"></script>
+<script src="http://cdn.shinobi.video/js/jquery.min.js"></script>
+<script src="http://cdn.shinobi.video/js/jsmpeg.pipe.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/handtrackjs@latest/dist/handtrack.min.js"> </script>
+<link rel="stylesheet" href="./style/index.css">
+<button onclick="startDrone(this)"> Start drone </button>
+<button onclick="stopDrone(this)"> Stop drone </button>
+<div id="lastAction"></div>
+<video id = "localVideo" > </video> 
+<canvas id="canvasVideo" height=500 width=500></canvas>
+<canvas id = "canvas" height=500 width=500> </canvas>
+<script src="client.js"></script>
+
