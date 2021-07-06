@@ -4,20 +4,10 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const DronHelper = require('./drone-service.js');
 const constants = require('./config/constants');
+let timeout;
 
-let lastAction = null;
 app.use(express.static('public'));
 
-const run = async () => {
-  await DronHelper.send('command');
-  await DronHelper.send('battery?');
-  await DronHelper.streamonCommand();
-
-  setInterval(async ()=> {
-    await DronHelper.send(`${constants.maping[lastAction]} 20`);
-    io.emit('lastAction', lastAction);
-  }, 1000);
-};
 
 app.post('/stream', (req, res) => {
   req.on('data', function(data) {
@@ -27,15 +17,23 @@ app.post('/stream', (req, res) => {
 
 io.on('connection', async (socket) => {
   socket.on('start', async () => {
-    await run();
+    await DronHelper.send('command');
+    await DronHelper.streamonCommand();
     await DronHelper.send('takeoff');
   });
   socket.on('stop', async () => {
     await DronHelper.send('land');
   });
 
+
   socket.on('action', async (msg) => {
-    lastAction = msg;
+    if (!timeout) {
+      timeout = setTimeout(async () => {
+        await DronHelper.send(`${constants.maping[msg]} 20`);
+        io.emit('lastAction', constants.maping[msg]);
+        timeout = null;
+      }, 500);
+    }
   });
 });
 

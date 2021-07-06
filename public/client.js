@@ -1,5 +1,14 @@
+/* eslint-disable */
 const BACKEND_URL = 'http://127.0.0.1:3001';
-let video; let canvas; let context; let lastAction; let socket; let player; let model;
+const video = document.createElement('video');
+const canvas = document.getElementById('canvas');
+const context = canvas.getContext('2d');
+const canvasVideo = document.getElementById('canvasVideo');
+const startButton = document.getElementById('startBtn');
+const stopButton = document.getElementById('stopBtn');
+const actionLog = document.getElementById('lastAction');
+
+let lastAction, socket, player, model;
 
 const socketEvent = (predictions) => {
   for (const i in predictions) {
@@ -10,22 +19,17 @@ const socketEvent = (predictions) => {
   }
 };
 
-const startVideo = () => {
-  handTrack.startVideo(video).then((status) => {
-    if (status) {
-      runDetection();
-    } else {
-      alert('Please enable video');
-    }
-  });
+const startVideo = async () => {
+  const status = await handTrack.startVideo(video);
+  if(status) runDetection()
+  else alert('Please enable video');
 };
 
-const runDetection = () => {
-  model.detect(video).then((predictions) => {
-    socketEvent(predictions);
-    model.renderPredictions(predictions, canvas, context, video);
-    requestAnimationFrame(runDetection);
-  });
+const runDetection = async () => {
+  const predictions = await model.detect(video);
+  socketEvent(predictions);
+  model.renderPredictions(predictions, canvas, context, video);
+  requestAnimationFrame(runDetection);
 };
 
 const startDrone = () => {
@@ -38,16 +42,7 @@ const stopDrone = () => {
   handTrack.stopVideo(video);
 };
 
-socket = io(BACKEND_URL, {
-  allowUpgrades: false,
-  upgrade: true,
-  transports: ['websocket'],
-});
-
-socket.on('connect', async () => {
-  video = document.getElementById('localVideo');
-  canvas = document.getElementById('canvas');
-  context = canvas.getContext('2d');
+const onSocketConnect = async () => {
   model = await handTrack.load({
     flipHorizontal: true,
     maxNumBoxes: 5,
@@ -55,15 +50,31 @@ socket.on('connect', async () => {
     scoreThreshold: 0.6,
   });
 
+  startButton.disabled = false;
+
   player = new JSMpeg.Player('pipe', {
-    canvas: document.getElementById('canvasVideo'),
+    canvas: canvasVideo,
   });
   console.log('Connect');
+}
+
+const onLastAction = (msg) => {
+  actionLog.innerHTML = msg;
+}
+
+const onStreamMessage = (data) => {
+  player.write(data);
+}
+
+socket = io(BACKEND_URL, {
+  allowUpgrades: false,
+  upgrade: true,
+  transports: ['websocket'],
 });
 
-socket.on('lastAction', (msg) => {
-    document.getElementById("lastAction").innerHTML = msg;
-})
-socket.on('stream', (data) =>{
-  player.write(data);
-});
+socket.on('connect', onSocketConnect);
+socket.on('lastAction', onLastAction)
+socket.on('stream', onStreamMessage);
+
+startButton.onclick = startDrone;
+stopButton.onclick = stopDrone;

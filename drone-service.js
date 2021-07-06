@@ -34,7 +34,7 @@ class DroneService {
         '-codec:v',
         'mpeg1video',
         '-s',
-        '640x480',
+        '600x500',
         '-b:v',
         '800k',
         '-bf',
