@@ -23,6 +23,7 @@ io.on('connection', async (socket) => {
   });
   socket.on('stop', async () => {
     await DronHelper.send('land');
+    await DronHelper.send('streamoff');
   });
 
 
